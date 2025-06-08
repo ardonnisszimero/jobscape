@@ -1,1 +1,1 @@
-A Spring Project
+A Spring Project to scrape email for updates about jobs 
