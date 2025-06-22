@@ -12,8 +12,6 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
-import com.google.api.services.gmail.model.ListLabelsResponse;
-import jakarta.annotation.PostConstruct;
 import org.example.jobscape.property.GmailProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,36 +24,37 @@ import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Component
-public class GmailQuickStart {
+public class GmailFactoryProxy {
 
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-    private static final List<String> SCOPES = Collections.singletonList(GmailScopes.GMAIL_LABELS);
-    private static final Logger log = LoggerFactory.getLogger(GmailQuickStart.class);
+    private static final List<String> SCOPES = GmailScopes.all().stream().toList();
+    private static final Logger log = LoggerFactory.getLogger(GmailFactoryProxy.class);
 
 
     private final GmailProperties mailProperties;
 
-    GmailQuickStart(GmailProperties mailProperties) {
+    GmailFactoryProxy(GmailProperties mailProperties) {
         this.mailProperties = mailProperties;
     }
 
-    @PostConstruct
-    public void connect() throws GeneralSecurityException, IOException {
+    public Gmail connect() throws GeneralSecurityException, IOException {
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
         Gmail service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredential(HTTP_TRANSPORT))
                 .setApplicationName(mailProperties.appName())
                 .build();
 
-        String user = "me";
-        ListLabelsResponse listResponse = service.users().labels().list(user).execute();
-        log.info(listResponse.toString());
+        return service;
+//        String user = "me";
+//        ListLabelsResponse listResponse = service.users().labels().list(user).execute();
+//        log.info(listResponse.toString());
     }
 
     private Credential getCredential(NetHttpTransport HTTP_TRANSPORT) throws IOException {
-        InputStream in = GmailQuickStart.class.getResourceAsStream(mailProperties.credentialsPath());
+        InputStream in = GmailFactoryProxy.class.getResourceAsStream(mailProperties.credentialsPath());
         log.debug("credentials path: {}", mailProperties.credentialsPath());
         if(in == null) {
             throw new FileNotFoundException("client_secret.json not found");
